@@ -75,8 +75,9 @@ class LocalSearch(BaseSearch):
             search_prompt = self.system_prompt.format(
                 context_data=context_text, response_type=self.response_type
             )
+            query = f"{search_prompt}\n---user's question---\n{query}"
             search_messages = [
-                {"role": "system", "content": search_prompt},
+                # {"role": "system", "content": search_prompt},
                 {"role": "user", "content": query},
             ]
 
@@ -124,8 +125,9 @@ class LocalSearch(BaseSearch):
         search_prompt = self.system_prompt.format(
             context_data=context_text, response_type=self.response_type
         )
+        query = f"{search_prompt}\n---user's question---\n{query}"
         search_messages = [
-            {"role": "system", "content": search_prompt},
+            # {"role": "system", "content": search_prompt},
             {"role": "user", "content": query},
         ]
 
@@ -158,8 +160,9 @@ class LocalSearch(BaseSearch):
             search_prompt = self.system_prompt.format(
                 context_data=context_text, response_type=self.response_type
             )
+            query = f"{search_prompt}\n---user's question---\n{query}"
             search_messages = [
-                {"role": "system", "content": search_prompt},
+                # {"role": "system", "content": search_prompt},
                 {"role": "user", "content": query},
             ]
 

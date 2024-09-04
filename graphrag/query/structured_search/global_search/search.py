@@ -206,8 +206,9 @@ class GlobalSearch(BaseSearch):
         search_prompt = ""
         try:
             search_prompt = self.map_system_prompt.format(context_data=context_data)
+            query = f"{search_prompt}\n---user's question---\n{query}"
             search_messages = [
-                {"role": "system", "content": search_prompt},
+                # {"role": "system", "content": search_prompt},
                 {"role": "user", "content": query},
             ]
             async with self.semaphore:
@@ -360,8 +361,9 @@ class GlobalSearch(BaseSearch):
             )
             if self.allow_general_knowledge:
                 search_prompt += "\n" + self.general_knowledge_inclusion_prompt
+            query = f"{search_prompt}\n---user's question---\n{query}"
             search_messages = [
-                {"role": "system", "content": search_prompt},
+                # {"role": "system", "content": search_prompt},
                 {"role": "user", "content": query},
             ]
 
@@ -456,8 +458,9 @@ class GlobalSearch(BaseSearch):
         )
         if self.allow_general_knowledge:
             search_prompt += "\n" + self.general_knowledge_inclusion_prompt
+        query = f"{search_prompt}\n---user's question---\n{query}"
         search_messages = [
-            {"role": "system", "content": search_prompt},
+            # {"role": "system", "content": search_prompt},
             {"role": "user", "content": query},
         ]
 

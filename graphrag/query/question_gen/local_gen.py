@@ -85,8 +85,9 @@ class LocalQuestionGen(BaseQuestionGen):
             system_prompt = self.system_prompt.format(
                 context_data=context_data, question_count=question_count
             )
+            question_text = f"{system_prompt}\n---user's question---\n{question_text}"
             question_messages = [
-                {"role": "system", "content": system_prompt},
+                # {"role": "system", "content": system_prompt},
                 {"role": "user", "content": question_text},
             ]
 
@@ -160,8 +161,9 @@ class LocalQuestionGen(BaseQuestionGen):
             system_prompt = self.system_prompt.format(
                 context_data=context_data, question_count=question_count
             )
+            question_text = f"{system_prompt}\n---user's question---\n{question_text}"
             question_messages = [
-                {"role": "system", "content": system_prompt},
+                # {"role": "system", "content": system_prompt},
                 {"role": "user", "content": question_text},
             ]
 
