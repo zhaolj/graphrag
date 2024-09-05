@@ -6,7 +6,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 
-from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
+from langfuse.openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
 
 from graphrag.query.llm.base import BaseTextEmbedding
 from graphrag.query.llm.oai.typing import OpenaiApiType
@@ -59,7 +59,7 @@ class BaseOpenAILLM(ABC):
 
         Returns
         -------
-            AsyncOpenAI | AsyncAzureOpenAI: The async client object.
+            OpenAI | AzureOpenAI: The sync client object.
         """
         return self._sync_client
 

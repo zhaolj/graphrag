@@ -5,6 +5,8 @@
 
 from collections.abc import AsyncGenerator, Callable, Generator
 from typing import Any
+from langfuse.decorators import observe, langfuse_context
+import os
 
 from tenacity import (
     AsyncRetrying,
@@ -183,6 +185,7 @@ class ChatOpenAI(BaseLLM, OpenAILLMImpl):
         else:
             return
 
+    @observe()
     def _generate(
         self,
         messages: str | list[Any],
@@ -190,6 +193,7 @@ class ChatOpenAI(BaseLLM, OpenAILLMImpl):
         callbacks: list[BaseLLMCallback] | None = None,
         **kwargs: Any,
     ) -> str:
+        langfuse_context.update_current_trace(session_id=os.environ.get("LANGFUSE_SESSION_ID"))
         model = self.model
         if not model:
             raise ValueError(_MODEL_REQUIRED_MSG)
@@ -198,38 +202,56 @@ class ChatOpenAI(BaseLLM, OpenAILLMImpl):
             messages=messages,  # type: ignore
             stream=streaming,
             **kwargs,
+            name="GraphRAG",
+            session_id=os.environ.get("GRAPHRAG_SESSION_ID")
         )  # type: ignore
         if streaming:
             full_response = ""
-            while True:
-                try:
-                    chunk = response.__next__()  # type: ignore
-                    if not chunk or not chunk.choices:
-                        continue
+            for chunk in response:
+                if not chunk or not chunk.choices:
+                    continue
+                delta = (
+                    chunk.choices[0].delta.content
+                    if chunk.choices[0].delta and chunk.choices[0].delta.content
+                    else ""
+                )
+                full_response += delta
+                if callbacks:
+                    for callback in callbacks:
+                        callback.on_llm_new_token(delta)
+                # if chunk.choices[0].finish_reason == "stop":  # type: ignore
+                #     break
+            # while True:
+            #     try:
+            #         chunk = response.__next__()  # type: ignore
+            #         if not chunk or not chunk.choices:
+            #             continue
 
-                    delta = (
-                        chunk.choices[0].delta.content
-                        if chunk.choices[0].delta and chunk.choices[0].delta.content
-                        else ""
-                    )  # type: ignore
+            #         delta = (
+            #             chunk.choices[0].delta.content
+            #             if chunk.choices[0].delta and chunk.choices[0].delta.content
+            #             else ""
+            #         )  # type: ignore
 
-                    full_response += delta
-                    if callbacks:
-                        for callback in callbacks:
-                            callback.on_llm_new_token(delta)
-                    if chunk.choices[0].finish_reason == "stop":  # type: ignore
-                        break
-                except StopIteration:
-                    break
+            #         full_response += delta
+            #         if callbacks:
+            #             for callback in callbacks:
+            #                 callback.on_llm_new_token(delta)
+            #         if chunk.choices[0].finish_reason == "stop":  # type: ignore
+            #             break
+            #     except StopIteration:
+            #         break
             return full_response
         return response.choices[0].message.content or ""  # type: ignore
 
+    @observe()
     def _stream_generate(
         self,
         messages: str | list[Any],
         callbacks: list[BaseLLMCallback] | None = None,
         **kwargs: Any,
     ) -> Generator[str, None, None]:
+        langfuse_context.update_current_trace(session_id=os.environ.get("LANGFUSE_SESSION_ID"))
         model = self.model
         if not model:
             raise ValueError(_MODEL_REQUIRED_MSG)
@@ -238,6 +260,8 @@ class ChatOpenAI(BaseLLM, OpenAILLMImpl):
             messages=messages,  # type: ignore
             stream=True,
             **kwargs,
+            name="GraphRAG",
+            session_id=os.environ.get("GRAPHRAG_SESSION_ID")
         )
         for chunk in response:
             if not chunk or not chunk.choices:
@@ -255,6 +279,7 @@ class ChatOpenAI(BaseLLM, OpenAILLMImpl):
                 for callback in callbacks:
                     callback.on_llm_new_token(delta)
 
+    @observe()
     async def _agenerate(
         self,
         messages: str | list[Any],
@@ -262,6 +287,7 @@ class ChatOpenAI(BaseLLM, OpenAILLMImpl):
         callbacks: list[BaseLLMCallback] | None = None,
         **kwargs: Any,
     ) -> str:
+        langfuse_context.update_current_trace(session_id=os.environ.get("LANGFUSE_SESSION_ID"))
         model = self.model
         if not model:
             raise ValueError(_MODEL_REQUIRED_MSG)
@@ -270,39 +296,57 @@ class ChatOpenAI(BaseLLM, OpenAILLMImpl):
             messages=messages,  # type: ignore
             stream=streaming,
             **kwargs,
+            name="GraphRAG",
+            session_id=os.environ.get("GRAPHRAG_SESSION_ID")
         )
         if streaming:
             full_response = ""
-            while True:
-                try:
-                    chunk = await response.__anext__()  # type: ignore
-                    if not chunk or not chunk.choices:
-                        continue
+            async for chunk in response:
+                if not chunk or not chunk.choices:
+                    continue
+                delta = (
+                    chunk.choices[0].delta.content
+                    if chunk.choices[0].delta and chunk.choices[0].delta.content
+                    else ""
+                )
+                full_response += delta
+                if callbacks:
+                    for callback in callbacks:
+                        callback.on_llm_new_token(delta)
+                # if chunk.choices[0].finish_reason == "stop":  # type: ignore
+                #     break
+            # while True:
+            #     try:
+            #         chunk = await response.__anext__()  # type: ignore
+            #         if not chunk or not chunk.choices:
+            #             continue
 
-                    delta = (
-                        chunk.choices[0].delta.content
-                        if chunk.choices[0].delta and chunk.choices[0].delta.content
-                        else ""
-                    )  # type: ignore
+            #         delta = (
+            #             chunk.choices[0].delta.content
+            #             if chunk.choices[0].delta and chunk.choices[0].delta.content
+            #             else ""
+            #         )  # type: ignore
 
-                    full_response += delta
-                    if callbacks:
-                        for callback in callbacks:
-                            callback.on_llm_new_token(delta)
-                    if chunk.choices[0].finish_reason == "stop":  # type: ignore
-                        break
-                except StopIteration:
-                    break
+            #         full_response += delta
+            #         if callbacks:
+            #             for callback in callbacks:
+            #                 callback.on_llm_new_token(delta)
+            #         if chunk.choices[0].finish_reason == "stop":  # type: ignore
+            #             break
+            #     except StopIteration:
+            #         break
             return full_response
 
         return response.choices[0].message.content or ""  # type: ignore
 
+    @observe()
     async def _astream_generate(
         self,
         messages: str | list[Any],
         callbacks: list[BaseLLMCallback] | None = None,
         **kwargs: Any,
     ) -> AsyncGenerator[str, None]:
+        langfuse_context.update_current_trace(session_id=os.environ.get("LANGFUSE_SESSION_ID"))
         model = self.model
         if not model:
             raise ValueError(_MODEL_REQUIRED_MSG)
@@ -311,6 +355,8 @@ class ChatOpenAI(BaseLLM, OpenAILLMImpl):
             messages=messages,  # type: ignore
             stream=True,
             **kwargs,
+            name="GraphRAG",
+            session_id=os.environ.get("GRAPHRAG_SESSION_ID")
         )
         async for chunk in response:
             if not chunk or not chunk.choices:

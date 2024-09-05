@@ -5,6 +5,8 @@
 
 import logging
 from typing import Any
+from langfuse.decorators import observe, langfuse_context
+import os
 
 from tenacity import (
     AsyncRetrying,
@@ -110,6 +112,7 @@ class OpenAI(OpenAILLMImpl):
             # TODO: why not just throw in this case?
             return ""
 
+    @observe()
     def _generate(
         self,
         messages: str | list[str],
@@ -117,37 +120,55 @@ class OpenAI(OpenAILLMImpl):
         callbacks: list[BaseLLMCallback] | None = None,
         **kwargs: Any,
     ) -> str:
+        langfuse_context.update_current_trace(session_id=os.environ.get("LANGFUSE_SESSION_ID", ""))
         response = self.sync_client.chat.completions.create(  # type: ignore
             model=self.model,
             messages=messages,  # type: ignore
             stream=streaming,
             **kwargs,
+            name="GraphRAG",
+            session_id=os.environ.get("GRAPHRAG_SESSION_ID")
         )  # type: ignore
         if streaming:
             full_response = ""
-            while True:
-                try:
-                    chunk = response.__next__()  # type: ignore
-                    if not chunk or not chunk.choices:
-                        continue
+            for chunk in response:
+                if not chunk or not chunk.choices:
+                    continue
+                delta = (
+                    chunk.choices[0].delta.content
+                    if chunk.choices[0].delta and chunk.choices[0].delta.content
+                    else ""
+                )
+                full_response += delta
+                if callbacks:
+                    for callback in callbacks:
+                        callback.on_llm_new_token(delta)
+                # if chunk.choices[0].finish_reason == "stop":  # type: ignore
+                #     break
+            # while True:
+            #     try:
+            #         chunk = response.__next__()  # type: ignore
+            #         if not chunk or not chunk.choices:
+            #             continue
 
-                    delta = (
-                        chunk.choices[0].delta.content
-                        if chunk.choices[0].delta and chunk.choices[0].delta.content
-                        else ""
-                    )  # type: ignore
+            #         delta = (
+            #             chunk.choices[0].delta.content
+            #             if chunk.choices[0].delta and chunk.choices[0].delta.content
+            #             else ""
+            #         )  # type: ignore
 
-                    full_response += delta
-                    if callbacks:
-                        for callback in callbacks:
-                            callback.on_llm_new_token(delta)
-                    if chunk.choices[0].finish_reason == "stop":  # type: ignore
-                        break
-                except StopIteration:
-                    break
+            #         full_response += delta
+            #         if callbacks:
+            #             for callback in callbacks:
+            #                 callback.on_llm_new_token(delta)
+            #         if chunk.choices[0].finish_reason == "stop":  # type: ignore
+            #             break
+            #     except StopIteration:
+            #         break
             return full_response
         return response.choices[0].message.content or ""  # type: ignore
 
+    @observe()
     async def _agenerate(
         self,
         messages: str | list[str],
@@ -155,33 +176,50 @@ class OpenAI(OpenAILLMImpl):
         callbacks: list[BaseLLMCallback] | None = None,
         **kwargs: Any,
     ) -> str:
+        langfuse_context.update_current_trace(session_id=os.environ.get("LANGFUSE_SESSION_ID", ""))
         response = await self.async_client.chat.completions.create(  # type: ignore
             model=self.model,
             messages=messages,  # type: ignore
             stream=streaming,
             **kwargs,
+            name="GraphRAG",
+            session_id=os.environ.get("GRAPHRAG_SESSION_ID")
         )
         if streaming:
             full_response = ""
-            while True:
-                try:
-                    chunk = await response.__anext__()  # type: ignore
-                    if not chunk or not chunk.choices:
-                        continue
+            async for chunk in response:
+                if not chunk or not chunk.choices:
+                    continue
+                delta = (
+                    chunk.choices[0].delta.content
+                    if chunk.choices[0].delta and chunk.choices[0].delta.content
+                    else ""
+                )
+                full_response += delta
+                if callbacks:
+                    for callback in callbacks:
+                        callback.on_llm_new_token(delta)
+                # if chunk.choices[0].finish_reason == "stop":  # type: ignore
+                #     break
+            # while True:
+            #     try:
+            #         chunk = await response.__anext__()  # type: ignore
+            #         if not chunk or not chunk.choices:
+            #             continue
 
-                    delta = (
-                        chunk.choices[0].delta.content
-                        if chunk.choices[0].delta and chunk.choices[0].delta.content
-                        else ""
-                    )  # type: ignore
+            #         delta = (
+            #             chunk.choices[0].delta.content
+            #             if chunk.choices[0].delta and chunk.choices[0].delta.content
+            #             else ""
+            #         )  # type: ignore
 
-                    full_response += delta
-                    if callbacks:
-                        for callback in callbacks:
-                            callback.on_llm_new_token(delta)
-                    if chunk.choices[0].finish_reason == "stop":  # type: ignore
-                        break
-                except StopIteration:
-                    break
+            #         full_response += delta
+            #         if callbacks:
+            #             for callback in callbacks:
+            #                 callback.on_llm_new_token(delta)
+            #         if chunk.choices[0].finish_reason == "stop":  # type: ignore
+            #             break
+            #     except StopIteration:
+            #         break
             return full_response
         return response.choices[0].message.content or ""  # type: ignore

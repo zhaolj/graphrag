@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 
 from dotenv import dotenv_values
+import uuid
 
 log = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ def read_dotenv(root: str) -> None:
     env_path = Path(root) / ".env"
     if env_path.exists():
         log.info("Loading pipeline .env file")
+        os.environ["LANGFUSE_SESSION_ID"] = str(uuid.uuid4())
         env_config = dotenv_values(f"{env_path}")
         for key, value in env_config.items():
             if key not in os.environ:

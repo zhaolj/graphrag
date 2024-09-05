@@ -7,6 +7,61 @@
 			"request": "attach",
 			"port": 9229,
 			"preLaunchTask": "func: host start"
-		}
+		},
+        {
+            "name": "Indexing Debug",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "module": "graphrag.index",
+            "justMyCode": false,
+            "args": [
+ 				// "-m",
+                // "graphrag.query",
+                "--root",
+                "./ragtest",
+                "--nocache",
+                // "--resume",
+                // "20240901-130209"
+            ]
+        },
+        {
+            "name": "Global Query",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "module": "graphrag.query",
+            "justMyCode": false,
+            "args": [
+ 				// "-m",
+                // "graphrag.query",
+                "--root",
+                "./ragtest",
+                "--method",
+                "global",
+                "这篇文章的主题是什么?",
+                "--data",
+                "output/round2_Gemma2-27b_moon/artifacts",
+            ]
+        },
+        {
+            "name": "Local Query",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "module": "graphrag.query",
+            "justMyCode": false,
+            "args": [
+ 				// "-m",
+                // "graphrag.query",
+                "--root",
+                "./ragtest",
+                "--method",
+                "local",
+                "马库斯是否被解救回来?",
+                // "--data",
+                // "./indexing/output/20240901-171845/artifacts",
+            ]
+        }
 	]
 }

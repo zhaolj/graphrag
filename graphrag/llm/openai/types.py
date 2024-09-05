@@ -3,7 +3,7 @@
 
 """A base class for OpenAI-based LLMs."""
 
-from openai import (
+from langfuse.openai import (
     AsyncAzureOpenAI,
     AsyncOpenAI,
 )
